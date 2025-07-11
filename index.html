@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Peta Kost & Sekitarnya</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: #f5f5f5;
+    }
+
+    /* Header Dashboard */
+    .dashboard-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-top: 5px;
+      text-align: left;
+    }
+
+    /* Search Bar */
+    .search-container {
+      background: white;
+      border-radius: 25px;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-width: 300px;
+    }
+
+    .search-input {
+      border: none;
+      outline: none;
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .search-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Main Container */
+    .dashboard-container {
+      display: flex;
+      height: calc(100vh - 100px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 350px;
+      background: white;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .filter-section {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .filter-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 6px 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s;
+    }
+
+    .filter-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .filter-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .filter-btn.active:hover {
+      background: #5a6fd8;
+    }
+
+    /* Location List */
+    .location-list {
+      padding: 20px;
+    }
+
+    .location-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-left: 4px solid #667eea;
+    }
+
+    .location-item:hover {
+      background: #e9ecef;
+      transform: translateX(5px);
+    }
+
+    .location-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .location-desc {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .location-coords {
+      font-size: 11px;
+      color: #999;
+    }
+
+    /* Map Container */
+    .map-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #map { 
+      height: 100%; 
+      width: 100%; 
+    }
+
+    /* Map Controls */
+    .map-controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    /* Sembunyikan tombol zoom bawaan Leaflet */
+    .leaflet-control-zoom {
+      display: none !important;
+    }
+
+    .control-btn {
+      background: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+
+    .control-btn:hover {
+      background: #f8f9fa;
+      transform: scale(1.05);
+    }
+
+    /* Stats Panel */
+    .stats-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+
+    .stats-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 18px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Animasi untuk notifikasi */
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      z-index: 3000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: #333;
+    }
+
+    .close {
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .close:hover {
+      color: #333;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: #5a6fd8;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    /* Preview Marker */
+    .preview-marker {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+      }
+      .dashboard-header {
+        padding: 12px 8px;
+      }
+      .header-content {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .header-title {
+        font-size: 18px;
+        text-align: left;
+      }
+      .header-subtitle {
+        font-size: 12px;
+        text-align: left;
+      }
+      .search-container {
+        min-width: 0;
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 6px 10px;
+      }
+      .dashboard-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        height: auto;
+        min-height: 120px;
+        box-shadow: none;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0;
+      }
+      .sidebar-header {
+        padding: 12px 10px 8px 10px;
+      }
+      .sidebar-title {
+        font-size: 15px;
+      }
+      .filter-section {
+        padding: 8px 10px;
+      }
+      .filter-title {
+        font-size: 12px;
+      }
+      .filter-btn {
+        font-size: 10px;
+        padding: 4px 8px;
+      }
+      .location-list {
+        padding: 8px 4px 8px 4px;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      .location-item {
+        font-size: 13px;
+        padding: 8px 6px;
+        margin-bottom: 6px;
+      }
+      .btn-secondary, .btn-primary {
+        font-size: 12px;
+        padding: 8px 12px;
+      }
+      /* Map dan map-container auto tinggi sisa layar */
+      .map-container, #map {
+        height: calc(100vh - 320px); /* Estimasi header+sidebar 320px, bisa disesuaikan */
+        min-height: 180px;
+        width: 100vw !important;
+        margin: 0;
+      }
+      .map-controls {
+        top: 8px;
+        left: 8px;
+        gap: 6px;
+      }
+      .stats-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: auto;
+        min-width: 0;
+        max-width: 95vw;
+        padding: 8px;
+        font-size: 12px;
+      }
+      .modal-content {
+        width: 99vw;
+        margin: 2vw;
+        max-width: 99vw;
+        padding: 0 4vw;
+      }
+      .form-group input,
+      .form-group select {
+        font-size: 13px;
+        padding: 8px;
+      }
+      .form-actions {
+        gap: 6px;
+      }
+      .btn-primary, .btn-secondary {
+        width: auto;
+        min-width: 80px;
+      }
+      /* Tombol tambah lokasi full width di mobile */
+      .header-content > div:last-child {
+        flex-direction: column !important;
+        gap: 6px;
+        width: 100%;
+      }
+      .btn-primary {
+        width: 100%;
+        margin-left: 0 !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .map-container, #map {
+        min-height: 120px;
+        height: calc(100vh - 280px) !important; /* Estimasi header+sidebar lebih kecil di device kecil */
+      }
+      .modal-content {
+        padding: 0 2vw;
+      }
+      .stats-panel {
+        font-size: 11px;
+        padding: 4px;
+      }
+      .location-list {
+        max-height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Dashboard -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <div class="header-title">📍 Dashboard Peta Kost & Sekitarnya</div>
+        <div class="header-subtitle">Universitas Sains dan Teknologi Indonesia Riau</div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="search-container">
+          <input type="text" class="search-input" placeholder="Cari lokasi..." id="searchInput">
+          <button class="search-btn" onclick="searchLocation()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        <button class="btn-primary" style="margin-left: 10px;" onclick="showAddLocationModal()">
+          <i class="fas fa-plus"></i> Tambah Lokasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Filter & Lokasi</div>
+      </div>
+      
+      <!-- Filter Section -->
+      <div class="filter-section">
+        <div class="filter-title">Kategori</div>
+        <div class="filter-options">
+          <button class="filter-btn active" onclick="filterLocations('all')">Semua</button>
+          <button class="filter-btn" onclick="filterLocations('kost')">Kost</button>
+          <button class="filter-btn" onclick="filterLocations('rumah')">Rumah</button>
+          <button class="filter-btn" onclick="filterLocations('villa')">Villa</button>
+          <button class="filter-btn" onclick="filterLocations('kampus')">Kampus</button>
+          <button class="filter-btn" onclick="filterLocations('fasilitas')">Fasilitas</button>
+        </div>
+      </div>
+
+      <!-- Location List -->
+      <div class="location-list" id="locationList">
+        <!-- Lokasi akan diisi oleh JavaScript -->
+      </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="map-container">
+  <div id="map"></div>
+      
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <button class="control-btn" onclick="zoomInMap()" title="Zoom In">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="control-btn" onclick="zoomOutMap()" title="Zoom Out">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="control-btn" onclick="resetView()" title="Reset View">
+          <i class="fas fa-home"></i>
+        </button>
+        <button class="control-btn" onclick="toggleFullscreen()" title="Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
+        <button class="control-btn" onclick="showCoordinateEditor()" title="Edit Koordinat">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="control-btn" onclick="resetToDefault()" title="Reset Data" style="background: #ff5722; color: white;">
+          <i class="fas fa-undo"></i>
+        </button>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="stats-panel">
+        <div class="stats-title">Statistik</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number" id="totalLocations">8</div>
+            <div class="stat-label">Total Lokasi</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="visibleLocations">8</div>
+            <div class="stat-label">Tampil</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Koordinat -->
+  <div id="coordinateModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Koordinat Lokasi</h3>
+        <span class="close" onclick="closeCoordinateEditor()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Pilih Lokasi:</label>
+          <select id="locationSelect" onchange="updateCoordinateForm()">
+            <option value="">Pilih lokasi...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Latitude:</label>
+          <input type="number" id="editLat" step="any" placeholder="Contoh: 0.448815">
+        </div>
+        <div class="form-group">
+          <label>Longitude:</label>
+          <input type="number" id="editLng" step="any" placeholder="Contoh: 101.397187">
+        </div>
+        <div class="form-group">
+          <label>Atau gunakan koordinat dari peta:</label>
+          <button class="btn-secondary" onclick="getMapCoordinates()">
+            <i class="fas fa-map-marker-alt"></i> Ambil dari Peta
+          </button>
+          <button class="btn-secondary" onclick="cancelMapSelection()" id="cancelBtn" style="display: none;">
+            <i class="fas fa-times"></i> Batal
+          </button>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="saveCoordinates()">Simpan</button>
+          <button class="btn-secondary" onclick="closeCoordinateEditor()">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- Modal Tambah Lokasi Baru -->
+    <div id="addLocationModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Tambah Lokasi Baru</h3>
+          <span class="close" onclick="closeAddLocationModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Nama Lokasi:</label>
+            <input type="text" id="addNama" placeholder="Nama lokasi">
+          </div>
+          <div class="form-group">
+            <label>Deskripsi:</label>
+            <input type="text" id="addDeskripsi" placeholder="Deskripsi singkat">
+          </div>
+          <div class="form-group">
+            <label>Kategori:</label>
+            <select id="addKategori">
+              <option value="kost">Kost</option>
+              <option value="rumah">Rumah</option>
+              <option value="villa">Villa</option>
+              <option value="kampus">Kampus</option>
+              <option value="fasilitas">Fasilitas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Latitude:</label>
+            <input type="number" id="addLat" step="any" placeholder="Contoh: 0.448815">
+          </div>
+          <div class="form-group">
+            <label>Longitude:</label>
+            <input type="number" id="addLng" step="any" placeholder="Contoh: 101.397187">
+          </div>
+          <div class="form-group">
+            <button class="btn-secondary" onclick="getAddMapCoordinates()" type="button">
+              <i class="fas fa-map-marker-alt"></i> Ambil dari Peta
+            </button>
+            <button class="btn-secondary" onclick="cancelAddMapSelection()" id="cancelAddBtn" style="display: none;" type="button">
+              <i class="fas fa-times"></i> Batal
+            </button>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="saveNewLocation()">Simpan</button>
+            <button class="btn-secondary" onclick="closeAddLocationModal()">Batal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Data lokasi default
+    const defaultDataRumah = [
+      { 
+        nama: "Kost Saya", 
+        lat: 0.448815, 
+        lng: 101.397187, 
+        deskripsi: "Tempat tinggal mahasiswa",
+        kategori: "kost",
+        icon: "🏠"
+      },
+      { 
+        nama: "Rumah Pak Ujang", 
+        lat: 0.448801, 
+        lng: 101.397261, 
+        deskripsi: "Rumah warga sekitar",
+        kategori: "rumah",
+        icon: "🏡"
+      },
+      { 
+        nama: "Rumah Pak Tashid", 
+        lat: 0.448843, 
+        lng: 101.397057, 
+        deskripsi: "Rumah warga sekitar",
+        kategori: "rumah",
+        icon: "🏡"
+      },
+      { 
+        nama: "Kantin Kak Silas", 
+        lat: 0.448754, 
+        lng: 101.397423, 
+        deskripsi: "Tempat makan mahasiswa",
+        kategori: "fasilitas",
+        icon: "🍽️"
+      },
+      { 
+        nama: "Kampus USTI", 
+        lat: 0.4488068, 
+        lng: 101.3977388, 
+        deskripsi: "Universitas Sains dan Teknologi Indonesia",
+        kategori: "kampus",
+        icon: "🎓"
+      },
+      { 
+        nama: "Kost Laki-laki", 
+        lat: 0.4490629, 
+        lng: 101.3974531, 
+        deskripsi: "Kost khusus mahasiswa laki-laki",
+        kategori: "kost",
+        icon: "👨‍🎓"
+      },
+      { 
+        nama: "Kost Elite", 
+        lat: 0.4483052, 
+        lng: 101.3966471, 
+        deskripsi: "Kost premium dengan fasilitas lengkap",
+        kategori: "kost",
+        icon: "⭐"
+      },
+      { 
+        nama: "Villa Savana", 
+        lat: 0.448908, 
+        lng: 101.398976, 
+        deskripsi: "Villa mewah dengan pemandangan indah",
+        kategori: "villa",
+        icon: "🏰"
+      }
+    ];
+
+    // Load data dari localStorage atau gunakan default
+    let dataRumah = JSON.parse(localStorage.getItem('mapData')) || defaultDataRumah;
+
+    // Hapus Perumahan RPS jika masih ada di localStorage
+    const idxRPS = dataRumah.findIndex(item => item.nama && item.nama.toLowerCase().includes('perumahan rps'));
+    if (idxRPS !== -1) {
+      dataRumah.splice(idxRPS, 1);
+      localStorage.setItem('mapData', JSON.stringify(dataRumah));
+    }
+
+    let map, markers = [];
+    let currentFilter = 'all';
+
+        // Inisialisasi peta
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: true,
+        minZoom: 10,
+        maxZoom: 20
+      }).setView([0.447, 101.396], 15);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        minZoom: 10,
+        maxZoom: 20
+      }).addTo(map);
+
+      addMarkers();
+      createLocationList();
+      
+      // Cek apakah ada data tersimpan
+      const savedData = localStorage.getItem('mapData');
+      if (savedData) {
+        showNotification('Data tersimpan telah dimuat!', 'success');
+      }
+    }
+
+    // Tambah marker ke peta
+    function addMarkers() {
+      dataRumah.forEach(item => {
+        const marker = L.marker([item.lat, item.lng]).addTo(map)
+          .bindPopup(`
+            <div style="text-align: center;">
+              <div style="font-size: 24px; margin-bottom: 5px;">${item.icon}</div>
+              <b>${item.nama}</b><br>
+              ${item.deskripsi}<br>
+              <small>Koordinat: ${item.lat}, ${item.lng}</small>
+            </div>
+          `);
+        
+        markers.push({ marker, data: item });
+      });
+    }
+
+    // Buat daftar lokasi di sidebar
+    function createLocationList() {
+      const locationList = document.getElementById('locationList');
+      locationList.innerHTML = '';
+
+      // Filter data sesuai currentFilter
+      const filteredData = currentFilter === 'all' ? dataRumah : dataRumah.filter(item => item.kategori === currentFilter);
+
+      filteredData.forEach((item, idx) => {
+        const locationItem = document.createElement('div');
+        locationItem.className = 'location-item';
+        locationItem.onclick = () => focusLocation(item);
+        
+        locationItem.innerHTML = `
+          <div class="location-name">${item.icon} ${item.nama}</div>
+          <div class="location-desc">${item.deskripsi}</div>
+          <div class="location-coords">${item.lat}, ${item.lng}</div>
+          <div style="display:flex; gap:4px; margin-top:8px; justify-content:flex-end;">
+            <button class="btn-secondary" style="font-size:11px; padding:4px 10px;" onclick="event.stopPropagation(); showEditNameModal(${getGlobalIndex(item)});">Edit</button>
+            <button class="btn-secondary" style="font-size:11px; padding:4px 10px; background:#ffebee; color:#d32f2f; border:1px solid #ffcdd2;" onclick="event.stopPropagation(); deleteLocation(${getGlobalIndex(item)});">Hapus</button>
+          </div>
+        `;
+        
+        locationList.appendChild(locationItem);
+      });
+    }
+
+    // Filter lokasi
+    function filterLocations(kategori) {
+      currentFilter = kategori;
+      
+      // Update filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Filter markers
+      markers.forEach(({ marker, data }) => {
+        if (kategori === 'all' || data.kategori === kategori) {
+          marker.addTo(map);
+        } else {
+          marker.remove();
+        }
+      });
+
+      // Update stats
+      updateStats();
+      createLocationList(); // Update sidebar list based on new filter
+    }
+
+    // Focus ke lokasi tertentu
+    function focusLocation(item) {
+      map.setView([item.lat, item.lng], 18);
+      markers.find(m => m.data.nama === item.nama)?.marker.openPopup();
+    }
+
+    // Reset view
+    function resetView() {
+      map.setView([0.447, 101.396], 15);
+    }
+
+    // Toggle fullscreen
+    function toggleFullscreen() {
+      const mapContainer = document.querySelector('.map-container');
+      if (!document.fullscreenElement) {
+        mapContainer.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Search functionality
+    function searchLocation() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      
+      if (searchTerm === '') {
+        filterLocations(currentFilter);
+        return;
+      }
+
+      // Cari lokasi yang cocok
+      const matchedLocations = [];
+      
+      markers.forEach(({ marker, data }) => {
+        if (data.nama.toLowerCase().includes(searchTerm) || 
+            data.deskripsi.toLowerCase().includes(searchTerm)) {
+          marker.addTo(map);
+          matchedLocations.push({ marker, data });
+        } else {
+          marker.remove();
+        }
+      });
+
+      // Jika ada hasil pencarian, zoom dan focus ke lokasi pertama
+      if (matchedLocations.length > 0) {
+        const firstMatch = matchedLocations[0];
+        
+        // Zoom dan pan ke lokasi yang ditemukan
+        map.setView([firstMatch.data.lat, firstMatch.data.lng], 18, {
+          animate: true,
+          duration: 1.5
+        });
+        
+        // Buka popup setelah animasi selesai
+        setTimeout(() => {
+          firstMatch.marker.openPopup();
+        }, 1500);
+        
+        // Highlight lokasi di sidebar
+        highlightLocationInSidebar(firstMatch.data.nama);
+        
+        // Tampilkan notifikasi hasil pencarian
+        showSearchNotification(matchedLocations.length, searchTerm);
+      } else {
+        // Jika tidak ada hasil, tampilkan notifikasi
+        showSearchNotification(0, searchTerm);
+      }
+
+      updateStats();
+    }
+
+    // Highlight lokasi di sidebar
+    function highlightLocationInSidebar(locationName) {
+      // Hapus highlight sebelumnya
+      document.querySelectorAll('.location-item').forEach(item => {
+        item.style.background = '#f8f9fa';
+        item.style.borderLeftColor = '#667eea';
+      });
+      
+      // Highlight lokasi yang ditemukan
+      document.querySelectorAll('.location-item').forEach(item => {
+        if (item.querySelector('.location-name').textContent.includes(locationName)) {
+          item.style.background = '#e3f2fd';
+          item.style.borderLeftColor = '#2196f3';
+          item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+
+    // Tampilkan notifikasi hasil pencarian
+    function showSearchNotification(count, searchTerm) {
+      // Hapus notifikasi sebelumnya
+      const existingNotification = document.querySelector('.search-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+      
+      if (count === 0) {
+        // Buat notifikasi tidak ada hasil
+        const notification = document.createElement('div');
+        notification.className = 'search-notification';
+        notification.style.cssText = `
+          position: fixed;
+          top: 120px;
+          right: 20px;
+          background: #ff5722;
+          color: white;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          z-index: 2000;
+          font-size: 14px;
+          animation: slideIn 0.3s ease;
+        `;
+        notification.innerHTML = `
+          <i class="fas fa-exclamation-triangle"></i>
+          Tidak ada lokasi yang cocok dengan "${searchTerm}"
+        `;
+        document.body.appendChild(notification);
+        
+        // Hapus notifikasi setelah 3 detik
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      } else {
+        // Buat notifikasi hasil ditemukan
+        const notification = document.createElement('div');
+        notification.className = 'search-notification';
+        notification.style.cssText = `
+          position: fixed;
+          top: 120px;
+          right: 20px;
+          background: #4caf50;
+          color: white;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+          z-index: 2000;
+          font-size: 14px;
+          animation: slideIn 0.3s ease;
+        `;
+        notification.innerHTML = `
+          <i class="fas fa-check-circle"></i>
+          Ditemukan ${count} lokasi untuk "${searchTerm}"
+        `;
+        document.body.appendChild(notification);
+        
+        // Hapus notifikasi setelah 3 detik
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+    }
+
+    // Update statistics
+    function updateStats() {
+      const visibleCount = markers.filter(({ marker }) => 
+        map.hasLayer(marker)
+      ).length;
+      
+      document.getElementById('visibleLocations').textContent = visibleCount;
+    }
+
+    // Enter key untuk search
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchLocation();
+      }
+    });
+
+    // Fungsi untuk menampilkan modal edit koordinat
+    function showCoordinateEditor() {
+      const modal = document.getElementById('coordinateModal');
+      const locationSelect = document.getElementById('locationSelect');
+      
+      // Isi dropdown dengan lokasi
+      locationSelect.innerHTML = '<option value="">Pilih lokasi...</option>';
+      dataRumah.forEach((item, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${item.icon} ${item.nama}`;
+        locationSelect.appendChild(option);
+      });
+      
+      modal.style.display = 'flex';
+    }
+
+    // Tutup modal
+    function closeCoordinateEditor() {
+      document.getElementById('coordinateModal').style.display = 'none';
+    }
+
+    // Update form koordinat berdasarkan lokasi yang dipilih
+    function updateCoordinateForm() {
+      const locationSelect = document.getElementById('locationSelect');
+      const selectedIndex = locationSelect.value;
+      
+      if (selectedIndex !== '') {
+        const location = dataRumah[selectedIndex];
+        document.getElementById('editLat').value = location.lat;
+        document.getElementById('editLng').value = location.lng;
+      } else {
+        document.getElementById('editLat').value = '';
+        document.getElementById('editLng').value = '';
+      }
+    }
+
+    // Ambil koordinat dari posisi klik di peta
+    function getMapCoordinates() {
+      const locationSelect = document.getElementById('locationSelect');
+      const selectedIndex = locationSelect.value;
+      
+      if (selectedIndex === '') {
+        showNotification('Pilih lokasi terlebih dahulu!', 'error');
+        return;
+      }
+      
+      // Tutup modal sementara
+      closeCoordinateEditor();
+      
+      // Tampilkan instruksi
+      showNotification('Klik di peta untuk memilih lokasi yang tepat', 'info');
+      
+      // Buat marker preview sementara
+      let previewMarker = null;
+      
+      // Tambahkan event listener untuk hover peta (preview)
+      map.on('mousemove', function(e) {
+        if (previewMarker) {
+          previewMarker.remove();
+        }
+        
+        previewMarker = L.marker(e.latlng, {
+          icon: L.divIcon({
+            className: 'preview-marker',
+            html: `<div style="background: #ff5722; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; white-space: nowrap;">${dataRumah[selectedIndex].nama}</div>`,
+            iconSize: [100, 30],
+            iconAnchor: [50, 15]
+          })
+        }).addTo(map);
+      });
+      
+      // Tambahkan event listener untuk klik peta
+      map.once('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        // Hapus preview marker
+        if (previewMarker) {
+          previewMarker.remove();
+        }
+        
+        // Hapus event listener mousemove
+        map.off('mousemove');
+        
+        // Update data langsung
+        dataRumah[selectedIndex].lat = lat;
+        dataRumah[selectedIndex].lng = lng;
+        
+        // Simpan ke localStorage
+        saveToLocalStorage();
+        
+        // Update marker di peta
+        const markerData = markers[selectedIndex];
+        markerData.marker.setLatLng([lat, lng]);
+        
+        // Update popup
+        markerData.marker.bindPopup(`
+          <div style="text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 5px;">${dataRumah[selectedIndex].icon}</div>
+            <b>${dataRumah[selectedIndex].nama}</b><br>
+            ${dataRumah[selectedIndex].deskripsi}<br>
+            <small>Koordinat: ${lat.toFixed(7)}, ${lng.toFixed(7)}</small>
+          </div>
+        `);
+        
+        // Update sidebar
+        createLocationList();
+        
+        // Tampilkan notifikasi sukses
+        showNotification(`Koordinat ${dataRumah[selectedIndex].nama} berhasil diperbarui!`, 'success');
+        
+        // Zoom ke lokasi baru
+        map.setView([lat, lng], 18, {
+          animate: true,
+          duration: 1
+        });
+        
+        // Buka popup
+        setTimeout(() => {
+          markerData.marker.openPopup();
+        }, 1000);
+      });
+    }
+
+    // Batalkan pemilihan koordinat dari peta
+    function cancelMapSelection() {
+      // Hapus event listener mousemove
+      map.off('mousemove');
+      
+      // Hapus preview marker jika ada
+      const previewMarkers = document.querySelectorAll('.preview-marker');
+      previewMarkers.forEach(marker => {
+        if (marker._leaflet_id) {
+          map.removeLayer(marker);
+        }
+      });
+      
+      // Buka kembali modal
+      showCoordinateEditor();
+      
+      showNotification('Pemilihan koordinat dibatalkan', 'info');
+    }
+
+    // Simpan koordinat yang diubah
+    function saveCoordinates() {
+      const locationSelect = document.getElementById('locationSelect');
+      const selectedIndex = locationSelect.value;
+      const newLat = parseFloat(document.getElementById('editLat').value);
+      const newLng = parseFloat(document.getElementById('editLng').value);
+      
+      if (selectedIndex === '') {
+        showNotification('Pilih lokasi terlebih dahulu!', 'error');
+        return;
+      }
+      
+      if (isNaN(newLat) || isNaN(newLng)) {
+        showNotification('Koordinat tidak valid!', 'error');
+        return;
+      }
+      
+      // Update data
+      dataRumah[selectedIndex].lat = newLat;
+      dataRumah[selectedIndex].lng = newLng;
+      
+      // Simpan ke localStorage
+      saveToLocalStorage();
+      
+      // Update marker di peta
+      const markerData = markers[selectedIndex];
+      markerData.marker.setLatLng([newLat, newLng]);
+      
+      // Update popup
+      markerData.marker.bindPopup(`
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 5px;">${dataRumah[selectedIndex].icon}</div>
+          <b>${dataRumah[selectedIndex].nama}</b><br>
+          ${dataRumah[selectedIndex].deskripsi}<br>
+          <small>Koordinat: ${newLat}, ${newLng}</small>
+        </div>
+      `);
+      
+      // Update sidebar
+      createLocationList();
+      
+      // Tutup modal
+      closeCoordinateEditor();
+      
+      // Tampilkan notifikasi
+      showNotification('Koordinat berhasil diperbarui!', 'success');
+    }
+
+    // Fungsi notifikasi umum
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = 'notification';
+      
+      let bgColor, icon;
+      switch(type) {
+        case 'success':
+          bgColor = '#4caf50';
+          icon = 'fas fa-check-circle';
+          break;
+        case 'error':
+          bgColor = '#ff5722';
+          icon = 'fas fa-exclamation-triangle';
+          break;
+        default:
+          bgColor = '#2196f3';
+          icon = 'fas fa-info-circle';
+      }
+      
+      notification.style.cssText = `
+        position: fixed;
+        top: 120px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 2000;
+        font-size: 14px;
+        animation: slideIn 0.3s ease;
+      `;
+      notification.innerHTML = `
+        <i class="${icon}"></i>
+        ${message}
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Fungsi untuk menyimpan data ke localStorage
+    function saveToLocalStorage() {
+      localStorage.setItem('mapData', JSON.stringify(dataRumah));
+    }
+
+    // Fungsi untuk reset data ke default
+    function resetToDefault() {
+      if (confirm('Apakah Anda yakin ingin mengembalikan semua data ke default? Perubahan yang telah disimpan akan hilang.')) {
+        dataRumah = [...defaultDataRumah];
+        saveToLocalStorage();
+        
+        // Reload peta
+        if (map) {
+          map.remove();
+        }
+        markers = [];
+        initMap();
+        
+        showNotification('Data berhasil direset ke default!', 'success');
+      }
+    }
+
+    // Tutup modal jika klik di luar modal
+    window.onclick = function(event) {
+      const modal = document.getElementById('coordinateModal');
+      if (event.target === modal) {
+        closeCoordinateEditor();
+      }
+    }
+
+    // Modal Tambah Lokasi Baru
+    function showAddLocationModal() {
+      document.getElementById('addLocationModal').style.display = 'flex';
+    }
+    function closeAddLocationModal() {
+      document.getElementById('addLocationModal').style.display = 'none';
+    }
+
+    // Ambil koordinat dari peta untuk tambah lokasi
+    function getAddMapCoordinates() {
+      closeAddLocationModal();
+      showNotification('Klik di peta untuk memilih lokasi baru', 'info');
+      let previewMarker = null;
+      map.on('mousemove', function(e) {
+        if (previewMarker) previewMarker.remove();
+        previewMarker = L.marker(e.latlng, {
+          icon: L.divIcon({
+            className: 'preview-marker',
+            html: `<div style=\"background: #4caf50; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; white-space: nowrap;\">Lokasi Baru</div>`,
+            iconSize: [100, 30],
+            iconAnchor: [50, 15]
+          })
+        }).addTo(map);
+      });
+      map.once('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        if (previewMarker) previewMarker.remove();
+        map.off('mousemove');
+        document.getElementById('addLat').value = lat;
+        document.getElementById('addLng').value = lng;
+        showAddLocationModal();
+        showNotification('Koordinat berhasil diambil!', 'success');
+      });
+      document.getElementById('cancelAddBtn').style.display = 'inline-block';
+    }
+    function cancelAddMapSelection() {
+      map.off('mousemove');
+      document.getElementById('cancelAddBtn').style.display = 'none';
+      showAddLocationModal();
+      showNotification('Pemilihan koordinat dibatalkan', 'info');
+    }
+
+    // Simpan lokasi baru
+    function saveNewLocation() {
+      // Ambil data dari form
+      const nama = document.getElementById('addNama').value.trim();
+      const deskripsi = document.getElementById('addDeskripsi').value.trim();
+      const kategori = document.getElementById('addKategori').value;
+      const icon = getIconByKategori(kategori);
+      // Hapus pengambilan img
+      // const img = document.getElementById('addImg').value.trim();
+      const lat = parseFloat(document.getElementById('addLat').value);
+      const lng = parseFloat(document.getElementById('addLng').value);
+
+      // Validasi sederhana
+      if (!nama || !deskripsi || !kategori || isNaN(lat) || isNaN(lng)) {
+        showNotification('Semua field wajib diisi dan koordinat harus valid!', 'error');
+        return;
+      }
+
+      // Buat objek lokasi baru tanpa img
+      const newLoc = { nama, deskripsi, kategori, icon, lat, lng };
+
+      // Tambahkan ke dataRumah dan simpan ke localStorage
+      dataRumah.push(newLoc);
+      saveToLocalStorage();
+
+      // Hapus semua marker lama dari map
+      markers.forEach(({ marker }) => marker.remove());
+      markers = [];
+      // Tambahkan ulang semua marker (termasuk yang baru)
+      addMarkers();
+
+      // Update sidebar dan statistik
+      createLocationList();
+      updateStats();
+
+      // Tutup modal dan reset form
+      closeAddLocationModal();
+      document.getElementById('addNama').value = '';
+      document.getElementById('addDeskripsi').value = '';
+      document.getElementById('addKategori').value = 'kost';
+      document.getElementById('addLat').value = '';
+      document.getElementById('addLng').value = '';
+
+      showNotification('Lokasi baru berhasil ditambahkan!', 'success');
+    }
+
+    // Fungsi untuk mendapatkan ikon berdasarkan kategori
+    function getIconByKategori(kategori) {
+      switch (kategori) {
+        case 'kost': return '🏠';
+        case 'rumah': return '🏡';
+        case 'villa': return '🏰';
+        case 'kampus': return '🎓';
+        case 'fasilitas': return '🍽️';
+        default: return '📍';
+      }
+    }
+
+    // Tambahkan fungsi untuk mendapatkan index global dari item (karena filter bisa mengubah urutan)
+    function getGlobalIndex(item) {
+      return dataRumah.findIndex(x => x.nama === item.nama && x.lat === item.lat && x.lng === item.lng);
+    }
+
+    // Tambahkan modal edit nama & deskripsi
+    if (!document.getElementById('editNameModal')) {
+      const modal = document.createElement('div');
+      modal.id = 'editNameModal';
+      modal.className = 'modal';
+      modal.style.display = 'none';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Edit Nama & Deskripsi Lokasi</h3>
+            <span class="close" onclick="closeEditNameModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Nama Lokasi:</label>
+              <input type="text" id="editNamaInput">
+            </div>
+            <div class="form-group">
+              <label>Deskripsi:</label>
+              <input type="text" id="editDeskripsiInput">
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="saveEditName()">Simpan</button>
+              <button class="btn-secondary" onclick="closeEditNameModal()">Batal</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    let editNameIndex = null;
+    function showEditNameModal(idx) {
+      editNameIndex = idx;
+      document.getElementById('editNamaInput').value = dataRumah[idx].nama;
+      document.getElementById('editDeskripsiInput').value = dataRumah[idx].deskripsi;
+      document.getElementById('editNameModal').style.display = 'flex';
+    }
+    function closeEditNameModal() {
+      document.getElementById('editNameModal').style.display = 'none';
+      editNameIndex = null;
+    }
+    function saveEditName() {
+      const newNama = document.getElementById('editNamaInput').value.trim();
+      const newDeskripsi = document.getElementById('editDeskripsiInput').value.trim();
+      if (!newNama) {
+        showNotification('Nama tidak boleh kosong!', 'error');
+        return;
+      }
+      dataRumah[editNameIndex].nama = newNama;
+      dataRumah[editNameIndex].deskripsi = newDeskripsi;
+      saveToLocalStorage();
+      // Update marker popup
+      markers[editNameIndex].marker.bindPopup(`
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 5px;">${dataRumah[editNameIndex].icon}</div>
+          <b>${newNama}</b><br>
+          ${newDeskripsi}<br>
+          <small>Koordinat: ${dataRumah[editNameIndex].lat}, ${dataRumah[editNameIndex].lng}</small>
+        </div>
+      `);
+      createLocationList();
+      closeEditNameModal();
+      showNotification('Nama & deskripsi berhasil diperbarui!', 'success');
+    }
+
+    // Fungsi tombol zoom custom
+    function zoomInMap() {
+      if (map) map.zoomIn();
+    }
+    function zoomOutMap() {
+      if (map) map.zoomOut();
+    }
+
+    // Fungsi hapus lokasi
+    function deleteLocation(idx) {
+      if (confirm('Yakin ingin menghapus lokasi ini?')) {
+        // Hapus marker dari map
+        if (markers[idx]) {
+          markers[idx].marker.remove();
+          markers.splice(idx, 1);
+        }
+        // Hapus dari dataRumah
+        dataRumah.splice(idx, 1);
+        saveToLocalStorage();
+        // Update tampilan
+        createLocationList();
+        updateStats();
+        showNotification('Lokasi berhasil dihapus!', 'success');
+      }
+    }
+
+    // Initialize map when page loads
+    window.onload = initMap;
+  </script>
+</body>
+</html> 
