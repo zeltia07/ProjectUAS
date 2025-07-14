@@ -564,6 +564,9 @@
         <button class="btn-primary" style="margin-left: 10px;" onclick="showAddLocationModal()">
           <i class="fas fa-plus"></i> Tambah Lokasi
         </button>
+        <button class="btn-secondary" style="margin-left: 0; background: #009688; color: white;" onclick="startDigitasiBangunan()">
+          <i class="fas fa-draw-polygon"></i> Digitasi Bangunan
+        </button>
       </div>
     </div>
   </div>
@@ -573,25 +576,44 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
-        <div class="sidebar-title">Filter & Lokasi</div>
-      </div>
-      
-      <!-- Filter Section -->
-      <div class="filter-section">
-        <div class="filter-title">Kategori</div>
-        <div class="filter-options">
-          <button class="filter-btn active" onclick="filterLocations('all')">Semua</button>
-          <button class="filter-btn" onclick="filterLocations('kost')">Kost</button>
-          <button class="filter-btn" onclick="filterLocations('rumah')">Rumah</button>
-          <button class="filter-btn" onclick="filterLocations('villa')">Villa</button>
-          <button class="filter-btn" onclick="filterLocations('kampus')">Kampus</button>
-          <button class="filter-btn" onclick="filterLocations('fasilitas')">Fasilitas</button>
+        <div class="sidebar-title">Filter</div>
+        <button id="showAllBtn" class="btn-secondary" style="margin-top:8px; margin-left:8px; font-size:12px; padding:6px 12px; border-radius:8px;" onclick="showAllLayers()">Tampilkan Semua</button>
+        <div style="margin-top:10px; display:flex; gap:8px;">
+          <button id="tabLokasi" class="btn-primary" style="font-size:12px; padding:6px 12px; border-radius:8px 0 0 8px;" onclick="switchSidebarTab('lokasi')">Lokasi</button>
+          <button id="tabBangunan" class="btn-secondary" style="font-size:12px; padding:6px 12px; border-radius:0 8px 8px 0;" onclick="switchSidebarTab('bangunan')">Bangunan</button>
         </div>
       </div>
+      
+      <!-- Filter Section (untuk lokasi & bangunan) -->
+      <div class="filter-section" id="filterSection" data-mode="lokasi">
+        <div class="filter-title">Kategori</div>
+        <div class="filter-options">
+          <button class="filter-btn active" data-kategori="all" onclick="onFilterKategoriClick('all')">Semua</button>
+          <button class="filter-btn" data-kategori="kost" onclick="onFilterKategoriClick('kost')">Kost</button>
+          <button class="filter-btn" data-kategori="rumah" onclick="onFilterKategoriClick('rumah')">Rumah</button>
+          <button class="filter-btn" data-kategori="villa" onclick="onFilterKategoriClick('villa')">Villa</button>
+          <button class="filter-btn" data-kategori="kampus" onclick="onFilterKategoriClick('kampus')">Kampus</button>
+          <button class="filter-btn" data-kategori="fasilitas" onclick="onFilterKategoriClick('fasilitas')">Fasilitas</button>
+        </div>
+      </div>
+      <script>
+      function onFilterKategoriClick(kategori) {
+        const mode = document.getElementById('filterSection').getAttribute('data-mode');
+        if (mode === 'lokasi') {
+          filterLocations(kategori);
+        } else {
+          filterBangunanKategori(kategori);
+        }
+      }
+      </script>
 
       <!-- Location List -->
       <div class="location-list" id="locationList">
         <!-- Lokasi akan diisi oleh JavaScript -->
+      </div>
+      <!-- Bangunan List -->
+      <div class="location-list" id="bangunanList" style="display:none;">
+        <!-- Bangunan akan diisi oleh JavaScript -->
       </div>
     </div>
 
@@ -619,6 +641,14 @@
         <button class="control-btn" onclick="resetToDefault()" title="Reset Data" style="background: #ff5722; color: white;">
           <i class="fas fa-undo"></i>
         </button>
+        <button class="control-btn" onclick="startDigitasiBangunan()" title="Digitasi Bangunan" style="background: #009688; color: white;">
+          <i class="fas fa-draw-polygon"></i>
+        </button>
+      </div>
+      <!-- Floating Digitasi Controls -->
+      <div id="digitasiFloatingControls" style="display:none; position:absolute; top:80px; left:50%; transform:translateX(-50%); z-index:2001; gap:8px;">
+        <button class="btn-primary" id="btnSelesaiDigitasi" style="font-size:13px; padding:8px 18px; margin-right:8px;" onclick="selesaiDigitasiBangunan()">Selesai Digitasi</button>
+        <button class="btn-secondary" id="btnBatalDigitasi" style="font-size:13px; padding:8px 18px;" onclick="batalDigitasiBangunan()">Batal</button>
       </div>
 
       <!-- Stats Panel -->
@@ -727,8 +757,183 @@
     </div>
   </div>
 
+  <div id="digitasiModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Tambah Bangunan Baru</h3>
+        <span class="close" onclick="closeDigitasiModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nama Bangunan:</label>
+          <input type="text" id="bangunanNama" placeholder="Nama bangunan">
+        </div>
+        <div class="form-group">
+          <label>Deskripsi:</label>
+          <input type="text" id="bangunanDeskripsi" placeholder="Deskripsi singkat">
+        </div>
+        <div class="form-group">
+          <label>Kategori:</label>
+          <select id="bangunanKategori">
+            <option value="kost">Kost</option>
+            <option value="rumah">Rumah</option>
+            <option value="villa">Villa</option>
+            <option value="kampus">Kampus</option>
+            <option value="fasilitas">Fasilitas</option>
+            <option value="gedung">Gedung</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Koordinat Poligon:</label>
+          <textarea id="bangunanCoords" rows="3" readonly style="width:100%; font-size:12px;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="btnSimpanBangunan" onclick="saveBangunan()" disabled>Simpan</button>
+          <button class="btn-secondary" onclick="closeDigitasiModal()">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
+    // === DATA BANGUNAN GLOBAL ===
+    // Data poligon kampus USTI & bangunan lain
+    const defaultBangunan = [
+      {
+        nama: 'Kampus USTI',
+        deskripsi: 'Universitas Sains dan Teknologi Indonesia',
+        kategori: 'kampus',
+        warna: '#1976d2',
+        coords: [
+          [0.45020,101.39795],
+          [0.45007,101.39865],
+          [0.44896,101.39836],
+          [0.44887,101.39861],
+          [0.44835,101.39857],
+          [0.44837,101.39848],
+          [0.44777,101.39824],
+          [0.44828,101.39707],
+          [0.44867,101.39731],
+          [0.44867,101.39740]
+        ]
+      },
+      {
+        nama: 'Kost Perempuan',
+        deskripsi: 'Kost khusus mahasiswi',
+        kategori: 'kost',
+        warna: '#e91e63', // pink
+        coords: [
+          [0.44888590158264075,101.39695957292902],
+          [0.4488604155416509,101.39702394594072],
+          [0.448797371124116,101.39699980606134],
+          [0.448829564018243,101.39693543304963]
+        ]
+      },
+      {
+        nama: 'Rumah Pak Tashid',
+        deskripsi: 'Rumah warga sekitar',
+        kategori: 'rumah',
+        warna: '#fb8c00', // oranye
+        coords: [
+          [0.4488656968439466,101.39703065150607],
+          [0.448846917655814,101.39709234230898],
+          [0.44879326283231996,101.39707356684723],
+          [0.4488187488735261,101.39701589935757]
+        ]
+      },
+      {
+        nama: 'Kost Saya',
+        deskripsi: 'Tempat tinggal mahasiswa',
+        kategori: 'kost',
+        warna: '#43a047', // hijau
+        coords: [
+          [0.44884423491464315,101.39711379997958],
+          [0.448794604202899,101.39709636562222],
+          [0.44875972856741037,101.3972023128707],
+          [0.44881338339117155,101.39722645275009]
+        ]
+      },
+      {
+        nama: 'Rumah Pak Ujang',
+        deskripsi: 'Rumah warga sekitar',
+        kategori: 'rumah',
+        warna: '#ff9800', // oranye terang
+        coords: [
+          [0.44881338339117155,101.39722108833246],
+          [0.44879996968526625,101.39726802698682],
+          [0.44875033897321687,101.39724254600303],
+          [0.4487691181616166,101.39720499507952]
+        ]
+      },
+      {
+        nama: 'Kantin Kak Silas',
+        deskripsi: 'Tempat makan mahasiswa',
+        kategori: 'fasilitas',
+        warna: '#e53935', // merah
+        coords: [
+          [0.44877850775577194,101.39734715214708],
+          [0.4487315597847916,101.39733239999858],
+          [0.44870875648448927,101.3973981141147],
+          [0.4487570458262268,101.39739945521912]
+        ]
+      },
+      {
+        nama: 'Kost Laki-laki',
+        deskripsi: 'Kost khusus mahasiswa laki-laki',
+        kategori: 'kost',
+        warna: '#3f51b5', // biru tua
+        coords: [
+          [0.44908568161563367,101.39742091288969],
+          [0.44903739227608436,101.39740079632355],
+          [0.44901861308838437,101.39747723927495],
+          [0.44906690242807357,101.39749333252789]
+        ]
+      },
+      {
+        nama: 'Kost Elite',
+        deskripsi: 'Kost premium dengan fasilitas lengkap',
+        kategori: 'kost',
+        warna: '#9c27b0', // ungu
+        coords: [
+          [0.44840445398713075,101.39649957411477],
+          [0.4481388625908957,101.39636009925603],
+          [0.4478760473745232,101.39691531641871],
+          [0.4480906666930787,101.39701455814512]
+        ]
+      },
+      {
+        nama: 'Villa Savana',
+        deskripsi: 'Villa mewah dengan pemandangan indah',
+        kategori: 'villa',
+        warna: '#00bcd4', // cyan
+        coords: [
+          [0.4499176133873362,101.39910936323514],
+          [0.4484716159679949,101.39876335829712],
+          [0.4484662504853987,101.3989108797823],
+          [0.4498559103493368,101.39924347367626],
+          [0.44987200679407213,101.39929711785271],
+          [0.44984517938612906,101.3992944356439],
+          [0.4484662504853987,101.39896184174995],
+          [0.4484528367788572,101.39913886753219],
+          [0.4498398139045379,101.3994553681732]
+        ]
+      }
+    ];
+    // Merge defaultBangunan dan data di localStorage tanpa duplikat (berdasarkan nama dan koordinat)
+    function mergeBangunan(defaults, saved) {
+      if (!Array.isArray(saved)) return [...defaults];
+      const merged = [...defaults];
+      saved.forEach(s => {
+        const exists = merged.some(d => d.nama === s.nama && JSON.stringify(d.coords) === JSON.stringify(s.coords));
+        if (!exists) merged.push(s);
+      });
+      return merged;
+    }
+    let dataBangunan = mergeBangunan(defaultBangunan, JSON.parse(localStorage.getItem('bangunanData')));
+    let bangunanLayers = [];
+
     // Data lokasi default
     const defaultDataRumah = [
       { 
@@ -1317,15 +1522,17 @@
     function resetToDefault() {
       if (confirm('Apakah Anda yakin ingin mengembalikan semua data ke default? Perubahan yang telah disimpan akan hilang.')) {
         dataRumah = [...defaultDataRumah];
+        dataBangunan = JSON.parse(JSON.stringify(defaultBangunan));
         saveToLocalStorage();
-        
+        localStorage.setItem('bangunanData', JSON.stringify(dataBangunan));
         // Reload peta
         if (map) {
           map.remove();
         }
         markers = [];
         initMap();
-        
+        renderBangunan();
+        createBangunanList();
         showNotification('Data berhasil direset ke default!', 'success');
       }
     }
@@ -1536,8 +1743,349 @@
       }
     }
 
+    // === DIGITASI BANGUNAN FLEKSIBEL ===
+    let digitasiMode = false;
+    let digitasiPoints = [];
+    let digitasiPolygon = null;
+    let digitasiModalOpen = false;
+
+    function startDigitasiBangunan() {
+      digitasiMode = true;
+      digitasiPoints = [];
+      if (digitasiPolygon) {
+        map.removeLayer(digitasiPolygon);
+        digitasiPolygon = null;
+      }
+      showNotification('Klik di peta untuk menandai titik-titik bangunan. Klik "Selesai Digitasi" jika sudah.', 'info');
+      map.getContainer().style.cursor = 'crosshair';
+      map.on('click', onDigitasiClick);
+      document.getElementById('digitasiFloatingControls').style.display = 'flex';
+    }
+    function onDigitasiClick(e) {
+      if (!digitasiMode) return;
+      digitasiPoints.push([e.latlng.lat, e.latlng.lng]);
+      if (digitasiPolygon) {
+        digitasiPolygon.setLatLngs(digitasiPoints);
+      } else {
+        digitasiPolygon = L.polygon(digitasiPoints, {color:'#009688', fillOpacity:0.4}).addTo(map);
+      }
+      document.getElementById('bangunanCoords').value = JSON.stringify(digitasiPoints);
+    }
+    function selesaiDigitasiBangunan() {
+      if (!digitasiMode) return;
+      if (digitasiPoints.length < 3) {
+        showNotification('Minimal 3 titik untuk membentuk bangunan!', 'error');
+        return;
+      }
+      map.getContainer().style.cursor = '';
+      map.off('click', onDigitasiClick);
+      document.getElementById('bangunanCoords').value = JSON.stringify(digitasiPoints);
+      document.getElementById('btnSimpanBangunan').disabled = false;
+      digitasiMode = false;
+      document.getElementById('digitasiFloatingControls').style.display = 'none';
+      showDigitasiModal();
+    }
+    function batalDigitasiBangunan() {
+      digitasiMode = false;
+      map.getContainer().style.cursor = '';
+      map.off('click', onDigitasiClick);
+      if (digitasiPolygon) {
+        map.removeLayer(digitasiPolygon);
+        digitasiPolygon = null;
+      }
+      digitasiPoints = [];
+      document.getElementById('digitasiFloatingControls').style.display = 'none';
+      document.getElementById('btnSimpanBangunan').disabled = true;
+      document.getElementById('bangunanCoords').value = '';
+      showNotification('Digitasi dibatalkan', 'info');
+    }
+    function showDigitasiModal() {
+      document.getElementById('digitasiModal').style.display = 'flex';
+      document.getElementById('bangunanNama').value = '';
+      document.getElementById('bangunanDeskripsi').value = '';
+      document.getElementById('bangunanKategori').value = 'kost';
+      // Koordinat sudah terisi
+      digitasiModalOpen = true;
+    }
+    function closeDigitasiModal() {
+      document.getElementById('digitasiModal').style.display = 'none';
+      digitasiMode = false;
+      map.getContainer().style.cursor = '';
+      map.off('click', onDigitasiClick);
+      if (digitasiPolygon) {
+        map.removeLayer(digitasiPolygon);
+        digitasiPolygon = null;
+      }
+      digitasiPoints = [];
+      digitasiModalOpen = false;
+      document.getElementById('btnSimpanBangunan').disabled = true;
+      document.getElementById('bangunanCoords').value = '';
+      document.getElementById('digitasiFloatingControls').style.display = 'none';
+    }
+    function saveBangunan() {
+      const nama = document.getElementById('bangunanNama').value.trim();
+      const deskripsi = document.getElementById('bangunanDeskripsi').value.trim();
+      const kategori = document.getElementById('bangunanKategori').value;
+      const coords = digitasiPoints.slice();
+      if (!nama || !deskripsi || !kategori || coords.length < 3) {
+        showNotification('Semua field wajib diisi dan minimal 3 titik!', 'error');
+        return;
+      }
+      const bangunan = { nama, deskripsi, kategori, coords };
+      dataBangunan.push(bangunan);
+      localStorage.setItem('bangunanData', JSON.stringify(dataBangunan));
+      closeDigitasiModal();
+      renderBangunan();
+      createBangunanList();
+      showNotification('Bangunan berhasil disimpan!', 'success');
+    }
+    function renderBangunan() {
+      // Hapus layer lama
+      bangunanLayers.forEach(l => map.removeLayer(l));
+      bangunanLayers = [];
+      let filtered = dataBangunan;
+      if (currentBangunanFilter && currentBangunanFilter !== 'all') {
+        filtered = dataBangunan.filter(b => b.kategori === currentBangunanFilter);
+      }
+      filtered.forEach((b, idx) => {
+        // Pilih warna berdasarkan kategori atau custom
+        let warna = b.warna || '#009688';
+        if (!b.warna) {
+          switch (b.kategori) {
+            case 'kampus': warna = '#1976d2'; break; // biru
+            case 'kost': warna = '#43a047'; break; // hijau
+            case 'rumah': warna = '#fb8c00'; break; // oranye
+            case 'villa': warna = '#8e24aa'; break; // ungu
+            case 'fasilitas': warna = '#e53935'; break; // merah
+            case 'gedung': warna = '#757575'; break; // abu
+            case 'lainnya': warna = '#bdbdbd'; break; // abu muda
+          }
+        }
+        // Pilih ikon berdasarkan kategori
+        let ikon = '📍';
+        switch (b.kategori) {
+          case 'kampus': ikon = '🎓'; break;
+          case 'kost': ikon = '🏠'; break;
+          case 'rumah': ikon = '🏡'; break;
+          case 'villa': ikon = '🏰'; break;
+          case 'fasilitas': ikon = '🍽️'; break;
+          case 'gedung': ikon = '🏢'; break;
+        }
+        const popupContent = `<div style='text-align:center;'><div style='font-size:24px;'>${ikon}</div><b>${b.nama}</b><br>${b.deskripsi || ''}</div>`;
+        const layer = L.polygon(b.coords, {color: warna, fillColor: warna, fillOpacity:0.4})
+          .addTo(map)
+          .bindPopup(popupContent);
+        bangunanLayers.push(layer);
+      });
+    }
+    function createBangunanList() {
+      const list = document.getElementById('bangunanList');
+      list.innerHTML = '';
+      let filtered = dataBangunan;
+      if (currentBangunanFilter && currentBangunanFilter !== 'all') {
+        filtered = dataBangunan.filter(b => b.kategori === currentBangunanFilter);
+      }
+      filtered.forEach((b, idx) => {
+        // Pilih ikon berdasarkan kategori
+        let ikon = '📍';
+        switch (b.kategori) {
+          case 'kampus': ikon = '🎓'; break;
+          case 'kost': ikon = '🏠'; break;
+          case 'rumah': ikon = '🏡'; break;
+          case 'villa': ikon = '🏰'; break;
+          case 'fasilitas': ikon = '🍽️'; break;
+          case 'gedung': ikon = '🏢'; break;
+        }
+        const div = document.createElement('div');
+        div.className = 'location-item';
+        div.style.borderLeft = `4px solid ${b.warna || '#009688'}`;
+        div.innerHTML = `
+          <div class='location-name' style='display:flex; align-items:center; gap:8px; font-size:17px;'>
+            <span style='font-size:22px;'>${ikon}</span> <span style='font-weight:600;'>${b.nama}</span>
+          </div>
+          <div class='location-desc' style='margin-bottom:4px; color:#666;'>${b.deskripsi}</div>
+          <div style='display:flex; gap:4px; margin-top:8px; justify-content:flex-end;'>
+            <button class='btn-secondary' style='font-size:11px; padding:4px 10px;' onclick='showEditBangunanModal(${idx})'>Edit</button>
+            <button class='btn-secondary' style='font-size:11px; padding:4px 10px; background:#ffebee; color:#d32f2f; border:1px solid #ffcdd2;' onclick='hapusBangunan(${idx})'>Hapus</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+    function focusBangunan(idx) {
+      const b = dataBangunan[idx];
+      if (!b) return;
+      map.fitBounds(b.coords);
+      bangunanLayers[idx].openPopup();
+    }
+    function hapusBangunan(idx) {
+      if (confirm('Yakin ingin menghapus bangunan ini?')) {
+        dataBangunan.splice(idx,1);
+        localStorage.setItem('bangunanData', JSON.stringify(dataBangunan));
+        renderBangunan();
+        createBangunanList();
+        showNotification('Bangunan berhasil dihapus!', 'success');
+      }
+    }
+
+    // === FUNGSI SWITCH SIDEBAR TAB ===
+    function switchSidebarTab(tab) {
+      if (tab === 'lokasi') {
+        document.getElementById('locationList').style.display = '';
+        document.getElementById('bangunanList').style.display = 'none';
+        document.getElementById('filterSection').style.display = '';
+        document.getElementById('tabLokasi').classList.add('btn-primary');
+        document.getElementById('tabLokasi').classList.remove('btn-secondary');
+        document.getElementById('tabBangunan').classList.add('btn-secondary');
+        document.getElementById('tabBangunan').classList.remove('btn-primary');
+        document.getElementById('showAllBtn').classList.add('btn-secondary');
+        document.getElementById('showAllBtn').classList.remove('btn-primary');
+        // Reset filter kategori ke Semua
+        currentFilter = 'all';
+        document.querySelectorAll('#filterSection .filter-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.getAttribute('data-kategori') === 'all') btn.classList.add('active');
+        });
+        // Tampilkan hanya marker lokasi, sembunyikan poligon bangunan
+        markers.forEach(({ marker }) => marker.addTo(map));
+        bangunanLayers.forEach(l => map.removeLayer(l));
+        document.getElementById('filterSection').style.display = '';
+        document.getElementById('filterSection').setAttribute('data-mode', 'lokasi');
+        createLocationList();
+        updateStats();
+      } else {
+        document.getElementById('locationList').style.display = 'none';
+        document.getElementById('bangunanList').style.display = '';
+        document.getElementById('filterSection').style.display = '';
+        document.getElementById('filterSection').setAttribute('data-mode', 'bangunan');
+        document.getElementById('tabLokasi').classList.add('btn-secondary');
+        document.getElementById('tabLokasi').classList.remove('btn-primary');
+        document.getElementById('tabBangunan').classList.add('btn-primary');
+        document.getElementById('tabBangunan').classList.remove('btn-secondary');
+        document.getElementById('showAllBtn').classList.add('btn-secondary');
+        document.getElementById('showAllBtn').classList.remove('btn-primary');
+        // Reset filter kategori ke Semua
+        currentBangunanFilter = 'all';
+        document.querySelectorAll('#filterSection .filter-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.getAttribute('data-kategori') === 'all') btn.classList.add('active');
+        });
+        // Tampilkan hanya poligon bangunan, sembunyikan marker lokasi
+        markers.forEach(({ marker }) => marker.remove());
+        bangunanLayers.forEach(l => l.addTo(map));
+        createBangunanList();
+        renderBangunan();
+      }
+    }
+    // Tampilkan semua marker dan poligon
+    function showAllLayers() {
+      markers.forEach(({ marker }) => marker.addTo(map));
+      bangunanLayers.forEach(l => l.addTo(map));
+      document.getElementById('tabLokasi').classList.add('btn-secondary');
+      document.getElementById('tabLokasi').classList.remove('btn-primary');
+      document.getElementById('tabBangunan').classList.add('btn-secondary');
+      document.getElementById('tabBangunan').classList.remove('btn-primary');
+      document.getElementById('showAllBtn').classList.add('btn-primary');
+      document.getElementById('showAllBtn').classList.remove('btn-secondary');
+    }
+
+    // Modal Edit Bangunan
+    if (!document.getElementById('editBangunanModal')) {
+      const modal = document.createElement('div');
+      modal.id = 'editBangunanModal';
+      modal.className = 'modal';
+      modal.style.display = 'none';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Edit Bangunan</h3>
+            <span class="close" onclick="closeEditBangunanModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Nama Bangunan:</label>
+              <input type="text" id="editBangunanNama">
+            </div>
+            <div class="form-group">
+              <label>Deskripsi:</label>
+              <input type="text" id="editBangunanDeskripsi">
+            </div>
+            <div class="form-group">
+              <label>Kategori:</label>
+              <select id="editBangunanKategori">
+                <option value="kost">Kost</option>
+                <option value="rumah">Rumah</option>
+                <option value="villa">Villa</option>
+                <option value="kampus">Kampus</option>
+                <option value="fasilitas">Fasilitas</option>
+                <option value="gedung">Gedung</option>
+                <option value="lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Warna Poligon:</label>
+              <input type="color" id="editBangunanWarna">
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="saveEditBangunan()">Simpan</button>
+              <button class="btn-secondary" onclick="closeEditBangunanModal()">Batal</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+    let editBangunanIndex = null;
+    function showEditBangunanModal(idx) {
+      editBangunanIndex = idx;
+      document.getElementById('editBangunanNama').value = dataBangunan[idx].nama;
+      document.getElementById('editBangunanDeskripsi').value = dataBangunan[idx].deskripsi;
+      document.getElementById('editBangunanKategori').value = dataBangunan[idx].kategori;
+      document.getElementById('editBangunanWarna').value = dataBangunan[idx].warna || '#009688';
+      document.getElementById('editBangunanModal').style.display = 'flex';
+    }
+    function closeEditBangunanModal() {
+      document.getElementById('editBangunanModal').style.display = 'none';
+      editBangunanIndex = null;
+    }
+    function saveEditBangunan() {
+      const newNama = document.getElementById('editBangunanNama').value.trim();
+      const newDeskripsi = document.getElementById('editBangunanDeskripsi').value.trim();
+      const newKategori = document.getElementById('editBangunanKategori').value;
+      const newWarna = document.getElementById('editBangunanWarna').value;
+      if (!newNama) {
+        showNotification('Nama tidak boleh kosong!', 'error');
+        return;
+      }
+      dataBangunan[editBangunanIndex].nama = newNama;
+      dataBangunan[editBangunanIndex].deskripsi = newDeskripsi;
+      dataBangunan[editBangunanIndex].kategori = newKategori;
+      dataBangunan[editBangunanIndex].warna = newWarna;
+      localStorage.setItem('bangunanData', JSON.stringify(dataBangunan));
+      renderBangunan();
+      createBangunanList();
+      closeEditBangunanModal();
+      showNotification('Bangunan berhasil diedit!', 'success');
+    }
+
     // Initialize map when page loads
-    window.onload = initMap;
+    window.onload = function() {
+      initMap();
+      renderBangunan();
+      createBangunanList();
+    }
+
+    function filterBangunanKategori(kategori) {
+      currentBangunanFilter = kategori;
+      // Update filter button
+      document.querySelectorAll('#filterSection .filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-kategori') === kategori) btn.classList.add('active');
+      });
+      // Filter daftar dan poligon bangunan
+      renderBangunan();
+      createBangunanList();
+    }
   </script>
 </body>
 </html> 
