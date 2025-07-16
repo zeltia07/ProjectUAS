@@ -999,6 +999,14 @@
         deskripsi: "Villa mewah dengan pemandangan indah",
         kategori: "villa",
         icon: "🏰"
+      },
+      { 
+        nama: "Kost Perempuan", 
+        lat: 0.44888590158264075, 
+        lng: 101.39695957292902, 
+        deskripsi: "Kost khusus mahasiswi",
+        kategori: "kost",
+        icon: "👩‍🎓"
       }
     ];
 
@@ -1039,19 +1047,36 @@
       }
     }
 
+    // Fungsi untuk generate nama file gambar dari nama lokasi (mapping manual)
+    function getImageFileName(nama) {
+      const map = {
+        "Kost Saya": "kostsaya.png",
+        "Rumah Pak Ujang": "ujang.png",
+        "Rumah Pak Tashid": "tashid.png",
+        "Kantin Kak Silas": "kantin.png",
+        "Kampus USTI": "kampus.png",
+        "Kost Laki-laki": "kostlaki.png",
+        "Kost Elite": "kostelite.png",
+        "Villa Savana": "villa.png",
+        "Kost Perempuan": "kostperempuan.png"
+      };
+      return "img/" + (map[nama] || "default.png");
+    }
+
     // Tambah marker ke peta
     function addMarkers() {
       dataRumah.forEach(item => {
+        const imgSrc = getImageFileName(item.nama);
         const marker = L.marker([item.lat, item.lng]).addTo(map)
           .bindPopup(`
-            <div style="text-align: center;">
+            <div style="text-align: left;">
               <div style="font-size: 24px; margin-bottom: 5px;">${item.icon}</div>
               <b>${item.nama}</b><br>
+              <img src="${imgSrc}" alt="${item.nama}" style="width:150px;max-width:100%;border-radius:8px;margin:8px 0;display:block;">
               ${item.deskripsi}<br>
               <small>Koordinat: ${item.lat}, ${item.lng}</small>
             </div>
           `);
-        
         markers.push({ marker, data: item });
       });
     }
@@ -1871,7 +1896,8 @@
           case 'fasilitas': ikon = '🍽️'; break;
           case 'gedung': ikon = '🏢'; break;
         }
-        const popupContent = `<div style='text-align:center;'><div style='font-size:24px;'>${ikon}</div><b>${b.nama}</b><br>${b.deskripsi || ''}</div>`;
+        const imgSrc = getImageFileName(b.nama);
+        const popupContent = `<div style='text-align:left;'><div style='font-size:24px;'>${ikon}</div><b>${b.nama}</b><br><img src='${imgSrc}' alt='${b.nama}' style='width:150px;max-width:100%;border-radius:8px;margin:8px 0;display:block;'>${b.deskripsi || ''}</div>`;
         const layer = L.polygon(b.coords, {color: warna, fillColor: warna, fillOpacity:0.4})
           .addTo(map)
           .bindPopup(popupContent);
