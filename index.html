@@ -1060,7 +1060,7 @@
         "Villa Savana": "villa.png",
         "Kost Perempuan": "kostperempuan.png"
       };
-      return "img/" + (map[nama] || "default.png");
+      return map[nama] || "default.png";
     }
 
     // Tambah marker ke peta
